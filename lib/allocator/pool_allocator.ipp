@@ -1,11 +1,15 @@
+#pragma once
+
 #include "pool_allocator.hpp"
+
 #include <cstdlib>
 #include <memory>
 #include <new>
 
 namespace lib::pmr {
 
-PoolMemoryResource::PoolMemoryResource() {
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::PoolMemoryResource() {
     pool_ = static_cast<std::byte*>(std::malloc(POOL_SIZE));
     if (pool_ == nullptr) {
         throw std::bad_alloc();
@@ -13,8 +17,9 @@ PoolMemoryResource::PoolMemoryResource() {
     allocated_ = std::vector<bool>(BLOCKS_COUNT, false);
 }
 
-void* PoolMemoryResource::do_allocate(std::size_t bytes,
-                                      std::size_t alignment) {
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+void* PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::do_allocate(
+    std::size_t bytes, std::size_t alignment) {
     std::size_t need_blocks = (bytes + BLOCK_SIZE - 1) / BLOCK_SIZE;
     std::size_t start_of_blocks = 0;
     std::size_t cur_blocks = 0;
@@ -44,8 +49,9 @@ void* PoolMemoryResource::do_allocate(std::size_t bytes,
     throw std::bad_alloc();
 }
 
-void PoolMemoryResource::do_deallocate(void* p, std::size_t bytes,
-                                       std::size_t alignment) {
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+void PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::do_deallocate(
+    void* p, std::size_t bytes, std::size_t alignment) {
     std::size_t starting_block =
         (static_cast<std::byte*>(p) - pool_) / BLOCK_SIZE;
     std::size_t ending_block =
@@ -55,6 +61,15 @@ void PoolMemoryResource::do_deallocate(void* p, std::size_t bytes,
               allocated_.begin() + ending_block, false);
 }
 
-PoolMemoryResource::~PoolMemoryResource() { free(pool_); }
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::~PoolMemoryResource() {
+    free(pool_);
+}
+
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+bool PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::do_is_equal(
+    const std::pmr::memory_resource& other) const noexcept {
+    return this == &other;
+}
 
 } // namespace lib::pmr

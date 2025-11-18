@@ -6,12 +6,10 @@
 
 namespace lib::pmr {
 
-class PoolMemoryResource : std::pmr::memory_resource {
+template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
+class PoolMemoryResource : public std::pmr::memory_resource {
 private:
-    static constexpr std::size_t POOL_SIZE = 1024 * 64; // 64Kb 2^16
-    static constexpr std::size_t BLOCK_SIZE = 64;
-    static constexpr std::size_t BLOCKS_COUNT =
-        POOL_SIZE / BLOCK_SIZE; // 2^16 / 2^6 = 2^10 = 1024 Blocks of 64 bytes
+    static constexpr std::size_t BLOCKS_COUNT = POOL_SIZE / BLOCK_SIZE;
     std::byte* pool_;
     std::vector<bool> allocated_;
 
@@ -26,3 +24,5 @@ public:
 };
 
 } // namespace lib::pmr
+
+#include "pool_allocator.ipp"

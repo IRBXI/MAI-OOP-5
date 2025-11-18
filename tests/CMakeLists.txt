@@ -11,5 +11,5 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(unit test_main.cpp )
-target_link_libraries(unit gtest_main)
+add_executable(unit test_main.cpp pool_allocator.cpp)
+target_link_libraries(unit gtest_main allocator)

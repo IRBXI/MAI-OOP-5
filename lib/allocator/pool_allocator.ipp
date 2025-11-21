@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 #include <new>
+#include <typeinfo>
 
 namespace lib::pmr {
 
@@ -69,7 +70,13 @@ PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::~PoolMemoryResource() {
 template <std::size_t POOL_SIZE, std::size_t BLOCK_SIZE>
 bool PoolMemoryResource<POOL_SIZE, BLOCK_SIZE>::do_is_equal(
     const std::pmr::memory_resource& other) const noexcept {
-    return this == &other;
+    try {
+        const PoolMemoryResource& other_casted =
+            dynamic_cast<const PoolMemoryResource&>(other);
+        return pool_ == other_casted.pool_;
+    } catch (std::bad_cast) {
+        return false;
+    }
 }
 
 } // namespace lib::pmr

@@ -23,11 +23,11 @@ cmake ..
 # Сборка проекта
 make
 
-# Запуск тестов вектора 
-./tests/vector_unit
+# Запуск тестов аллокатора 
+./tests/pool_allocator_unit
 
-# Запуск тестов для правильных многоугольников  
-./tests/figures/regular_polygons
+# Запуск тестов для forward list  
+./tests/figures/forward_list_unit
 
 # Запуск всех тестов сразу
 ./tests/unit

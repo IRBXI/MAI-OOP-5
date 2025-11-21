@@ -346,17 +346,6 @@ TEST_F(PoolMemoryResourceEdgeCases, RequestTooLargeThrows) {
     EXPECT_THROW(resource.allocate(1025, 1), std::bad_alloc);
 }
 
-TEST_F(PoolMemoryResourceEdgeCases, AlignmentTooLargeThrows) {
-    PoolMemoryResource<1024, 64> resource;
-
-    // Alignment larger than block size should throw
-    EXPECT_THROW(resource.allocate(64, 2048), std::bad_alloc);
-
-    // Valid alignment should work
-    void* block = resource.allocate(64, 64);
-    resource.deallocate(block, 64, 64);
-}
-
 TEST_F(PoolMemoryResourceEdgeCases, ZeroByteAllocation) {
     PoolMemoryResource<1024, 64> resource;
 

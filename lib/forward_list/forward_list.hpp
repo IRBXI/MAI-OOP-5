@@ -25,15 +25,17 @@ private:
 public:
     using allocator_type = std::pmr::polymorphic_allocator<T>;
 
+    template <bool is_const>
     class ForwardListIterator {
         friend class ForwardList;
 
     private:
-        Node* current_;
+        using NodeType = std::conditional_t<is_const, const Node*, Node*>;
+        NodeType current_;
 
     public:
         using difference_type = std::ptrdiff_t;
-        using value_type = T;
+        using value_type = std::conditional_t<is_const, const T, T>;
         using pointer = value_type*;
         using reference = value_type&;
         using iterator_category = std::forward_iterator_tag;
@@ -67,10 +69,14 @@ public:
     ForwardList& operator=(const ForwardList& other);
     ForwardList& operator=(ForwardList&& other);
 
-    inline __attribute__((always_inline)) ForwardListIterator
+    inline __attribute__((always_inline)) ForwardListIterator<false>
+    begin() noexcept;
+    inline __attribute__((always_inline)) ForwardListIterator<true>
     begin() const noexcept;
 
-    inline __attribute__((always_inline)) ForwardListIterator
+    inline __attribute__((always_inline)) ForwardListIterator<false>
+    end() noexcept;
+    inline __attribute__((always_inline)) ForwardListIterator<true>
     end() const noexcept;
 
     inline __attribute__((always_inline)) const T& Front() const noexcept;
@@ -86,13 +92,14 @@ public:
 
     void PopFront() noexcept;
 
-    template <typename... Args>
-    void EmplaceAfter(ForwardListIterator pos, Args&&... args);
+    template <typename... Args, bool is_const>
+    void EmplaceAfter(ForwardListIterator<is_const> pos, Args&&... args);
 
-    template <typename U>
-    void InsertAfter(ForwardListIterator pos, U&& value);
+    template <typename U, bool is_const>
+    void InsertAfter(ForwardListIterator<is_const> pos, U&& value);
 
-    void EraseAfter(ForwardListIterator pos) noexcept;
+    template <bool is_const>
+    void EraseAfter(ForwardListIterator<is_const> pos) noexcept;
 
     void Clear() noexcept;
 

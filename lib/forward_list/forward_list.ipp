@@ -105,15 +105,27 @@ ForwardList<T>& ForwardList<T>::operator=(ForwardList&& other) {
 }
 
 template <typename T>
-inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator
-ForwardList<T>::begin() const noexcept {
-    return ForwardListIterator(head_);
+inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator<false>
+ForwardList<T>::begin() noexcept {
+    return ForwardListIterator<false>(head_);
 }
 
 template <typename T>
-inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator
+inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator<true>
+ForwardList<T>::begin() const noexcept {
+    return ForwardListIterator<true>(head_);
+}
+
+template <typename T>
+inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator<false>
+ForwardList<T>::end() noexcept {
+    return ForwardListIterator<false>(nullptr);
+}
+
+template <typename T>
+inline __attribute__((always_inline)) ForwardList<T>::ForwardListIterator<true>
 ForwardList<T>::end() const noexcept {
-    return ForwardListIterator(nullptr);
+    return ForwardListIterator<true>(nullptr);
 }
 
 template <typename T>
@@ -171,8 +183,9 @@ void ForwardList<T>::PopFront() noexcept {
 }
 
 template <typename T>
-template <typename... Args>
-void ForwardList<T>::EmplaceAfter(ForwardListIterator pos, Args&&... args) {
+template <typename... Args, bool is_const>
+void ForwardList<T>::EmplaceAfter(ForwardListIterator<is_const> pos,
+                                  Args&&... args) {
     Node* next = pos.current_->next;
     Node* new_node =
         allocator_.template new_object<Node>(std::forward<Args>(args)...);
@@ -182,13 +195,14 @@ void ForwardList<T>::EmplaceAfter(ForwardListIterator pos, Args&&... args) {
 }
 
 template <typename T>
-template <typename U>
-void ForwardList<T>::InsertAfter(ForwardListIterator pos, U&& value) {
+template <typename U, bool is_const>
+void ForwardList<T>::InsertAfter(ForwardListIterator<is_const> pos, U&& value) {
     EmplaceAfter(pos, std::forward<U>(value));
 }
 
 template <typename T>
-void ForwardList<T>::EraseAfter(ForwardListIterator pos) noexcept {
+template <bool is_const>
+void ForwardList<T>::EraseAfter(ForwardListIterator<is_const> pos) noexcept {
     assert(size_ > 0);
     Node* next = pos.current_->next;
     pos.current_->next = next->next;

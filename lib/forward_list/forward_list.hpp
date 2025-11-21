@@ -13,9 +13,12 @@ private:
     struct Node {
         Node* next;
         T value;
+
+        template <typename... Args>
+        Node(Args&&... args);
     };
 
-    std::pmr::polymorphic_allocator<Node> node_allocator_;
+    std::pmr::polymorphic_allocator<T> allocator_;
     Node* head_;
     std::size_t size_;
 
@@ -50,19 +53,16 @@ public:
         inline __attribute__((always_inline)) pointer operator->() const;
     };
 
-    ForwardList(std::pmr::memory_resource* mem_resource =
-                    std::pmr::get_default_resource());
+    ForwardList(allocator_type allocator = std::pmr::get_default_resource());
 
     ForwardList(const std::initializer_list<T>& values,
-                std::pmr::memory_resource* mem_resource =
-                    std::pmr::get_default_resource());
+                allocator_type allocator = std::pmr::get_default_resource());
 
     ForwardList(const ForwardList& other,
-                std::pmr::memory_resource* mem_resource =
-                    std::pmr::get_default_resource());
+                allocator_type allocator = std::pmr::get_default_resource());
 
     ForwardList(ForwardList&& other,
-                std::pmr::memory_resource* = std::pmr::get_default_resource());
+                allocator_type allocator = std::pmr::get_default_resource());
 
     ForwardList& operator=(const ForwardList& other);
     ForwardList& operator=(ForwardList&& other);

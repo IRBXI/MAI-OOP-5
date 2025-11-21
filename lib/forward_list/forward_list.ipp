@@ -3,19 +3,23 @@
 #include "forward_list.hpp"
 
 #include <cassert>
-#include <memory>
 #include <ranges>
 
 namespace lib::pmr {
 
 template <typename T>
-ForwardList<T>::ForwardList(std::pmr::memory_resource* mem_resource)
-    : node_allocator_(mem_resource), head_(nullptr), size_(0) {}
+template <typename... Args>
+ForwardList<T>::Node::Node(Args&&... args)
+    : value(std::forward<Args>(args)...), next(nullptr) {}
+
+template <typename T>
+ForwardList<T>::ForwardList(allocator_type allocator)
+    : allocator_(allocator), head_(nullptr), size_(0) {}
 
 template <typename T>
 ForwardList<T>::ForwardList(const std::initializer_list<T>& values,
-                            std::pmr::memory_resource* mem_resource)
-    : node_allocator_(mem_resource), head_(nullptr), size_(0) {
+                            allocator_type allocator)
+    : allocator_(allocator), head_(nullptr), size_(0) {
     for (auto value : std::ranges::views::reverse(values)) {
         PushFront(value);
     }
@@ -23,8 +27,8 @@ ForwardList<T>::ForwardList(const std::initializer_list<T>& values,
 
 template <typename T>
 ForwardList<T>::ForwardList(const ForwardList<T>& other,
-                            std::pmr::memory_resource* mem_resource)
-    : node_allocator_(mem_resource), head_(nullptr), size_(0) {
+                            allocator_type allocator)
+    : allocator_(allocator), head_(nullptr), size_(0) {
     if (other.IsEmpty()) {
         return;
     }
@@ -37,14 +41,13 @@ ForwardList<T>::ForwardList(const ForwardList<T>& other,
 }
 
 template <typename T>
-ForwardList<T>::ForwardList(ForwardList<T>&& other,
-                            std::pmr::memory_resource* mem_resource)
-    : node_allocator_(mem_resource), head_(nullptr), size_(0) {
+ForwardList<T>::ForwardList(ForwardList<T>&& other, allocator_type allocator)
+    : allocator_(allocator), head_(nullptr), size_(0) {
     if (other.IsEmpty()) {
         return;
     }
-    // If they use the same allocator when we can actually move
-    if (mem_resource->is_equal(*other.node_allocator_.resource())) {
+    // If they use the same allocator then we can actually move
+    if (allocator_ == other.allocator_) {
         head_ = other.head_;
         size_ = other.size_;
         other.head_ = nullptr;
@@ -81,9 +84,8 @@ ForwardList<T>& ForwardList<T>::operator=(ForwardList&& other) {
     if (this != &other) {
         Clear();
         if (!other.IsEmpty()) {
-            // If they use the same allocator when we can actually move
-            if (node_allocator_.resource()->is_equal(
-                    *other.node_allocator_.resource())) {
+            // If they use the same allocator then we can actually move
+            if (allocator_ == other.allocator_) {
                 head_ = other.head_;
                 size_ = other.size_;
                 other.head_ = nullptr;
@@ -142,13 +144,12 @@ ForwardList<T>::Size() const noexcept {
 template <typename T>
 template <typename... Args>
 void ForwardList<T>::EmplaceFront(Args&&... args) {
-    if (!size_) {
+    if (IsEmpty()) {
         EmplaceFirstNode(std::forward<Args>(args)...);
         return;
     }
-    Node* new_head = node_allocator_.allocate(1);
-    std::construct_at(std::addressof(new_head->value),
-                      std::forward<Args>(args)...);
+    Node* new_head =
+        allocator_.template new_object<Node>(std::forward<Args>(args)...);
     new_head->next = head_;
     head_ = new_head;
     size_++;
@@ -165,8 +166,7 @@ void ForwardList<T>::PopFront() noexcept {
     assert(size_ > 0);
     Node* previous_head = head_;
     head_ = head_->next;
-    std::destroy_at(std::addressof(previous_head->value));
-    node_allocator_.deallocate(previous_head, 1);
+    allocator_.delete_object(previous_head);
     size_--;
 }
 
@@ -174,9 +174,8 @@ template <typename T>
 template <typename... Args>
 void ForwardList<T>::EmplaceAfter(ForwardListIterator pos, Args&&... args) {
     Node* next = pos.current_->next;
-    Node* new_node = node_allocator_.allocate(1);
-    std::construct_at(std::addressof(new_node->value),
-                      std::forward<Args>(args)...);
+    Node* new_node =
+        allocator_.template new_object<Node>(std::forward<Args>(args)...);
     new_node->next = next;
     pos.current_->next = new_node;
     size_++;
@@ -193,8 +192,7 @@ void ForwardList<T>::EraseAfter(ForwardListIterator pos) noexcept {
     assert(size_ > 0);
     Node* next = pos.current_->next;
     pos.current_->next = next->next;
-    std::destroy_at(std::addressof(next->value));
-    node_allocator_.deallocate(next, 1);
+    allocator_.delete_object(next);
     size_--;
 }
 
@@ -213,9 +211,7 @@ ForwardList<T>::~ForwardList() noexcept {
 template <typename T>
 template <typename... Args>
 void ForwardList<T>::EmplaceFirstNode(Args&&... args) {
-    head_ = node_allocator_.allocate(1);
-    std::construct_at(std::addressof(head_->value),
-                      std::forward<Args>(args)...);
+    head_ = allocator_.template new_object<Node>(std::forward<Args>(args)...);
     head_->next = nullptr;
     size_++;
 }

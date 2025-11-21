@@ -55,16 +55,16 @@ public:
         inline __attribute__((always_inline)) pointer operator->() const;
     };
 
-    ForwardList(allocator_type allocator = std::pmr::get_default_resource());
+    ForwardList(allocator_type allocator = allocator_type());
 
     ForwardList(const std::initializer_list<T>& values,
-                allocator_type allocator = std::pmr::get_default_resource());
+                allocator_type allocator = allocator_type());
 
     ForwardList(const ForwardList& other,
-                allocator_type allocator = std::pmr::get_default_resource());
+                allocator_type allocator = allocator_type());
 
     ForwardList(ForwardList&& other,
-                allocator_type allocator = std::pmr::get_default_resource());
+                allocator_type allocator = allocator_type());
 
     ForwardList& operator=(const ForwardList& other);
     ForwardList& operator=(ForwardList&& other);
